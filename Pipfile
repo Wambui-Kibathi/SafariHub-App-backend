@@ -12,6 +12,13 @@ flask-sqlalchemy = "*"
 flask-migrate = "*"
 flask-marshmallow = "*"
 python-dotenv = "*"
+marshmallow-sqlalchemy = "*"
+cloudinary = "*"
+requests = "*"
+flasgger = "*"
+flask-mail = "*"
+psycopg2-binary = "*"
+passlib = "*"
 
 [dev-packages]
 
