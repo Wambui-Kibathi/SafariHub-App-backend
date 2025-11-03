@@ -42,7 +42,7 @@ def login():
 
     # Create JWT access token
     additional_claims = {"role": user.role}
-    access_token = create_access_token(identity=user.id, additional_claims=additional_claims, expires_delta=timedelta(days=1))
+    access_token = create_access_token(identity=str(user.id), additional_claims=additional_claims, expires_delta=timedelta(days=1))
 
     return {
         "access_token": access_token,
@@ -62,7 +62,7 @@ def logout():
 @jwt_required()
 def me():
     user_id = get_jwt_identity()
-    user = db.session.get(User, user_id)
+    user = db.session.get(User, int(user_id))
     if not user:
         return {"message": "User not found"}, 404
     return user_schema.dump(user), 200

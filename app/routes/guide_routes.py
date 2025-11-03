@@ -21,7 +21,7 @@ destinations_schema = DestinationSchema(many=True)
 @role_required("guide")
 def guide_dashboard():
     user_id = get_jwt_identity()
-    user = db.session.get(User, user_id)
+    user = db.session.get(User, int(user_id))
     total_bookings = Booking.query.join(Destination).filter(Destination.id==Booking.destination_id).count()
     return {
         "guide": user_schema.dump(user),
@@ -29,18 +29,18 @@ def guide_dashboard():
     }, 200
 
 # Guide profile
-@guide_bp.route("/profile", methods=["GET"])
+@guide_bp.route("/profile", methods=["GET", "OPTIONS"])
 @role_required("guide")
 def get_profile():
     user_id = get_jwt_identity()
-    user = db.session.get(User, user_id)
+    user = db.session.get(User, int(user_id))
     return user_schema.dump(user), 200
 
-@guide_bp.route("/profile", methods=["PATCH"])
+@guide_bp.route("/profile", methods=["PATCH", "OPTIONS"])
 @role_required("guide")
 def update_profile():
     user_id = get_jwt_identity()
-    user = db.session.get(User, user_id)
+    user = db.session.get(User, int(user_id))
     data = request.get_json()
 
     if "full_name" in data:
@@ -58,7 +58,7 @@ def update_profile():
 @role_required("guide")
 def get_assigned_destinations():
     user_id = get_jwt_identity()
-    destinations = Destination.query.filter_by(guide_id=user_id).all()
+    destinations = Destination.query.filter_by(guide_id=int(user_id)).all()
     return destinations_schema.dump(destinations), 200
 
 # Guide view bookings for their destinations
@@ -66,5 +66,5 @@ def get_assigned_destinations():
 @role_required("guide")
 def get_bookings():
     user_id = get_jwt_identity()
-    bookings = Booking.query.join(Destination).filter(Destination.guide_id==user_id).all()
+    bookings = Booking.query.join(Destination).filter(Destination.guide_id==int(user_id)).all()
     return bookings_schema.dump(bookings), 200

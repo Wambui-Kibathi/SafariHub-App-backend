@@ -19,6 +19,7 @@ flasgger = "*"
 flask-mail = "*"
 psycopg2-binary = "*"
 passlib = "*"
+cors = "*"
 
 [dev-packages]
 

@@ -16,7 +16,11 @@ def create_app(config_name=None):
     migrate.init_app(app, db)
     jwt.init_app(app)
     mail.init_app(app)
-    cors.init_app(app)
+    cors.init_app(app, 
+                  origins=["http://localhost:5173"], 
+                  supports_credentials=True,
+                  allow_headers=["Content-Type", "Authorization"],
+                  methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
 
     # Import all models so Flask-Migrate can detect them
     from .models.destination import Destination
@@ -36,8 +40,8 @@ def create_app(config_name=None):
     from .routes.upload_routes import upload_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
-    app.register_blueprint(traveler_bp, url_prefix="/api/travelers")
-    app.register_blueprint(guide_bp, url_prefix="/api/guides")
+    app.register_blueprint(traveler_bp, url_prefix="/api/traveler")
+    app.register_blueprint(guide_bp, url_prefix="/api/guide")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(destination_bp, url_prefix="/api/destinations")
     app.register_blueprint(booking_bp, url_prefix="/api/bookings")

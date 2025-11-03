@@ -7,6 +7,7 @@ from app.schemas.booking_schema import BookingSchema
 from app.schemas.destination_schema import DestinationSchema
 from app.extensions import db
 from app.utils.role_required import role_required
+from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt
 
 admin_bp = Blueprint("admin_bp", __name__)
 user_schema = UserSchema()
@@ -17,7 +18,7 @@ destination_schema = DestinationSchema()
 destinations_schema = DestinationSchema(many=True)
 
 # Admin dashboard overview
-@admin_bp.route("/dashboard", methods=["GET"])
+@admin_bp.route("/dashboard", methods=["GET", "OPTIONS"])
 @role_required("admin")
 def admin_dashboard():
     total_users = User.query.count()
@@ -28,6 +29,59 @@ def admin_dashboard():
         "total_bookings": total_bookings,
         "total_destinations": total_destinations
     }, 200
+
+# Admin profile
+@admin_bp.route("/profile", methods=["GET", "OPTIONS"])
+@role_required("admin")
+def get_profile():
+    user_id = get_jwt_identity()
+    user = db.session.get(User, int(user_id))
+    return user_schema.dump(user), 200
+
+@admin_bp.route("/profile", methods=["POST", "PUT", "PATCH", "OPTIONS"])
+@role_required("admin")
+def update_admin_profile():
+    user_id = get_jwt_identity()
+    user = db.session.get(User, int(user_id))
+    data = request.get_json()
+
+    if "full_name" in data:
+        user.full_name = data["full_name"]
+    if "password" in data:
+        user.password = data["password"]
+    if "profile_pic" in data:
+        user.profile_pic = data["profile_pic"]
+
+    db.session.commit()
+    return user_schema.dump(user), 200
+
+# Debug JWT endpoint
+@admin_bp.route("/debug-jwt", methods=["GET", "OPTIONS"])
+@jwt_required()
+def debug_jwt():
+    user_id = get_jwt_identity()
+    claims = get_jwt()
+    return {
+        "user_id": user_id,
+        "claims": claims,
+        "role": claims.get("role")
+    }, 200
+
+# Create admin user (for testing)
+@admin_bp.route("/create-admin", methods=["POST", "OPTIONS"])
+def create_admin():
+    if User.query.filter_by(role="admin").first():
+        return {"message": "Admin already exists"}, 400
+    
+    admin = User(
+        full_name="Admin User",
+        email="admin@safarihub.com",
+        role="admin"
+    )
+    admin.password = "admin123"
+    db.session.add(admin)
+    db.session.commit()
+    return {"message": "Admin created", "email": "admin@safarihub.com", "password": "admin123"}, 201
 
 # Manage users
 @admin_bp.route("/users", methods=["GET"])
