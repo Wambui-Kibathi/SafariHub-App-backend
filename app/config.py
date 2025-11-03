@@ -4,7 +4,7 @@ from datetime import timedelta
 class Config:
     # General Settings
     SECRET_KEY = os.getenv("SECRET_KEY", "safarihub-secret-key")
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "postgresql://localhost/safarihub_db")
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///safarihub.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # JWT Configuration

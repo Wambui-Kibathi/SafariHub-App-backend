@@ -1,6 +1,6 @@
 from functools import wraps
 from flask_jwt_extended import verify_jwt_in_request, get_jwt
-from flask import jsonify
+from flask import jsonify, request
 
 def role_required(roles):
     """
@@ -13,6 +13,10 @@ def role_required(roles):
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
+            # Handle OPTIONS requests for CORS
+            if request.method == 'OPTIONS':
+                return '', 200
+            
             verify_jwt_in_request()
             claims = get_jwt()
             user_role = claims.get("role")

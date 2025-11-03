@@ -8,7 +8,7 @@ class BookingSchema(Schema):
     booking_date = fields.DateTime(required=True)
     start_date = fields.DateTime(required=True)
     end_date = fields.DateTime(required=True)
-    guests = fields.Integer(validate=validate.Range(min=1), missing=1)
+    guests = fields.Integer(validate=validate.Range(min=1), load_default=1)
     total_price = fields.Float(required=True, validate=validate.Range(min=0))
     status = fields.String(dump_only=True)
     special_requests = fields.String(allow_none=True)
