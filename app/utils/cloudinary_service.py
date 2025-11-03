@@ -2,7 +2,6 @@ import cloudinary
 import cloudinary.uploader
 import os
 
-# Configure Cloudinary with your .env credentials
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),

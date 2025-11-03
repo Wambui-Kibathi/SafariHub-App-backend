@@ -6,7 +6,7 @@ from app.models.booking import Booking
 from app.models.user import User
 from app.schemas.payment_schema import PaymentSchema
 from app.utils.role_required import role_required
-from app.utils.paystack_service import initialize_transaction, verify_transaction
+from app.utils.paypal_service import create_order, capture_order
 
 payment_bp = Blueprint("payment_bp", __name__)
 payment_schema = PaymentSchema()
@@ -33,68 +33,67 @@ def get_payment(id):
 
     return payment_schema.dump(payment), 200
 
-# Initialize a new payment
+# Initialize a new PayPal payment
 @payment_bp.route("/initialize", methods=["POST"])
 @jwt_required()
 def initialize_payment_route():
     data = request.get_json()
     booking_id = data.get("booking_id")
-    callback_url = data.get("callback_url")
 
-    if not booking_id or not callback_url:
-        return jsonify({"error": "booking_id and callback_url are required"}), 400
+    if not booking_id:
+        return jsonify({"error": "booking_id is required"}), 400
 
     booking = Booking.query.get_or_404(booking_id)
-
-    # Ensure the current user owns the booking
     current_user_id = get_jwt_identity()
+    
     if booking.traveler_id != current_user_id:
         return jsonify({"error": "Unauthorized"}), 403
-
     if booking.is_paid:
         return jsonify({"error": "Booking already paid"}), 400
 
-    # Initialize Paystack transaction
-    paystack_data = initialize_transaction(
-        email=booking.user.email,
-        amount=booking.total_cost,
-        callback_url=callback_url
-    )
+    # Create PayPal order
+    paypal_data = create_order(amount=booking.total_cost)
 
     # Create a pending Payment record
     payment = Payment(
         booking_id=booking.id,
-        reference=paystack_data["reference"],
+        reference=paypal_data["id"],  
         amount=booking.total_cost,
         status="pending"
     )
     db.session.add(payment)
     db.session.commit()
 
+    # Extract approval URL for frontend
+    approval_url = next((link["href"] for link in paypal_data["links"] if link["rel"] == "approve"), None)
     return {
         "payment": payment_schema.dump(payment),
-        "authorization_url": paystack_data["authorization_url"]
+        "approval_url": approval_url
     }, 201
 
-# Verify a payment by reference
-@payment_bp.route("/verify/<string:reference>", methods=["GET"])
+# Capture PayPal payment
+@payment_bp.route("/capture-payment", methods=["POST"])
 @jwt_required()
-def verify_payment_route(reference):
-    payment = Payment.query.filter_by(reference=reference).first_or_404()
-    paystack_data = verify_transaction(reference)
+def capture_payment_route():
+    data = request.get_json()
+    order_id = data.get("orderID")
 
-    if paystack_data["status"] == "success":
+    if not order_id:
+        return jsonify({"error": "orderID is required"}), 400
+
+    payment = Payment.query.filter_by(reference=order_id).first_or_404()
+    capture_data = capture_order(order_id)
+
+    if capture_data["status"] == "COMPLETED":
         payment.status = "success"
-
-        # Mark the booking as paid
         booking = Booking.query.get(payment.booking_id)
         booking.is_paid = True
         db.session.commit()
+        return {"message": "Payment successful", "payment": payment_schema.dump(payment)}, 200
     else:
         payment.status = "failed"
         db.session.commit()
-
-    return payment_schema.dump(payment), 200
+        return {"message": "Payment failed", "payment": payment_schema.dump(payment)}, 400
 
 # Delete a payment (Admin only)
 @payment_bp.route("/<int:id>", methods=["DELETE"])

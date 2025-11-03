@@ -8,7 +8,7 @@ destination_bp = Blueprint("destination_bp", __name__)
 destination_schema = DestinationSchema()
 destinations_schema = DestinationSchema(many=True)
 
-# GET all destinations (public)
+# GET all destinations 
 @destination_bp.route("/", methods=["GET"])
 def get_destinations():
     destinations = Destination.query.all()
