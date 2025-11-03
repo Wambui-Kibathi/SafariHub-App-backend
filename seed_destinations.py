@@ -1,8 +1,15 @@
-from app import create_app, db
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+from app import create_app
+from app.extensions import db
 from app.models.destination import Destination
 from sqlalchemy import text
 
-app = create_app()
+app = create_app('production')
 
 with app.app_context():
     # Clear existing destinations from the table
